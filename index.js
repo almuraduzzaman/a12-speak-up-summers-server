@@ -49,6 +49,7 @@ async function run() {
         const classCollection = client.db("speakUpSummers").collection('classes');
         const instructorCollection = client.db("speakUpSummers").collection('instructors');
         const selectedClassCollection = client.db("speakUpSummers").collection('selectedClasses');
+        const paymentCollection = client.db("speakUpSummers").collection('payments');
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -130,7 +131,7 @@ async function run() {
 
 
 
-
+        // Payments related APIs 
         // create payment intent
         app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const { price } = req.body;
@@ -144,7 +145,47 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret
             })
+        });
+
+
+        // payment related api
+        app.post('/payments', verifyJWT, async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+
+            // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+            // const deleteResult = await paymentCollection.deleteMany(query)
+
+            res.send({ insertResult, deleteResult });
         })
+
+        // app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
+        //     const users = await usersCollection.estimatedDocumentCount();
+        //     const products = await menuCollection.estimatedDocumentCount();
+        //     const orders = await paymentCollection.estimatedDocumentCount();
+
+        //     // best way to get sum of the price field is to use group and sum operator
+        //     /*
+        //       await paymentCollection.aggregate([
+        //         {
+        //           $group: {
+        //             _id: null,
+        //             total: { $sum: '$price' }
+        //           }
+        //         }
+        //       ]).toArray()
+        //     */
+
+        //     const payments = await paymentCollection.find().toArray();
+        //     const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
+
+        //     res.send({
+        //         revenue,
+        //         users,
+        //         products,
+        //         orders
+        //     })
+        // })
 
 
 
