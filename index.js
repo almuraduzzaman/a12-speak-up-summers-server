@@ -123,15 +123,15 @@ async function run() {
             if (!email) {
                 res.send([]);
             }
-            
+
 
             const decodedEmail = req.decoded.email;
             if (email !== decodedEmail) {
                 return res.status(403).send({ error: true, message: 'forbidden access' })
             }
-            
+
             const courses = await classCollection.find().toArray();
-            const paidForCourses = await paymentCollection.find({email:decodedEmail}).toArray();
+            const paidForCourses = await paymentCollection.find({ email: decodedEmail }).toArray();
 
             const enrolledCourseIds = paidForCourses.map(paidCourse => paidCourse.courseId);
             const enrolledCourses = courses.filter(course => enrolledCourseIds.includes(course._id.toString()));
@@ -197,16 +197,19 @@ async function run() {
             if (!email) {
                 res.send([]);
             }
-            
 
             const decodedEmail = req.decoded.email;
             if (email !== decodedEmail) {
                 return res.status(403).send({ error: true, message: 'forbidden access' })
             }
-            
-            const payments = await paymentCollection.find({email:decodedEmail}).toArray();
+
+            const payments = await paymentCollection.find({ email: decodedEmail })
+                .sort({ date: -1 })
+                .toArray();
+
             res.send(payments);
         });
+
 
 
 
