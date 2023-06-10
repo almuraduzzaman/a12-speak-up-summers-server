@@ -15,19 +15,19 @@ const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
     // console.log(authorization);
     if (!authorization) {
-      return res.status(401).send({ error: true, message: 'unauthorized access' });
+        return res.status(401).send({ error: true, message: 'unauthorized access' });
     }
     // bearer token
     const token = authorization.split(' ')[1];
-  
+
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-      if (err) {
-        return res.status(401).send({ error: true, message: 'unauthorized access' })
-      }
-      req.decoded = decoded;
-      next();
+        if (err) {
+            return res.status(401).send({ error: true, message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next();
     })
-  }
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qe4grrt.mongodb.net/?retryWrites=true&w=majority`;
@@ -52,9 +52,9 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })     
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res.send({ token })
-          })
+        })
 
 
 
@@ -83,42 +83,42 @@ async function run() {
 
 
         // selected classes APIs 
-        app.get('/selectedClasses',verifyJWT, async (req, res) => {
+        app.get('/selectedClasses', verifyJWT, async (req, res) => {
             const email = req.query.email;
             if (!email) {
-              res.send([]);
+                res.send([]);
             }
-      
+
             const decodedEmail = req.decoded.email;
             if (email !== decodedEmail) {
-              return res.status(403).send({ error: true, message: 'forbidden access' })
+                return res.status(403).send({ error: true, message: 'forbidden access' })
             }
-      
+
             const query = { email: email };
             const result = await selectedClassCollection.find(query).toArray();
             res.send(result);
-          });
+        });
 
 
-          app.post('/selectedClasses', async (req, res) => {
+        app.post('/selectedClasses', async (req, res) => {
             const item = req.body;
             const result = await selectedClassCollection.insertOne(item);
             res.send(result);
-          });
+        });
 
 
-          app.delete('/selectedClasses/:id', async (req, res) => {
+        app.delete('/selectedClasses/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await selectedClassCollection.deleteOne(query);
             res.send(result);
-          })
+        })
 
 
 
 
 
-          
+
 
         // show all instructors on page
         app.get('/instructors', async (req, res) => {
@@ -129,6 +129,26 @@ async function run() {
 
 
 
+
+
+        // create payment intent
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
+
+
+
+        // --------------------------------------
         // insert a chocolate to db 
         app.post('/upload-chocolate', async (req, res) => {
             const data = req.body;
@@ -174,7 +194,7 @@ async function run() {
             res.send(result);
         })
 
-
+        // -----------------------------
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
