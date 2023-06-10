@@ -117,6 +117,28 @@ async function run() {
 
 
 
+        // enrolled classes APIs 
+        app.get('/enrolledClasses', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (!email) {
+                res.send([]);
+            }
+            
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+            
+            const courses = await classCollection.find().toArray();
+            const paidForCourses = await paymentCollection.find({email:decodedEmail}).toArray();
+
+            const enrolledCourseIds = paidForCourses.map(paidCourse => paidCourse.courseId);
+            const enrolledCourses = courses.filter(course => enrolledCourseIds.includes(course._id.toString()));
+            res.send(enrolledCourses);
+        });
+
+
 
 
 
@@ -151,46 +173,25 @@ async function run() {
         // payment related api
         app.post('/payments', verifyJWT, async (req, res) => {
             const payment = req.body;
-            console.log(payment);
             const insertResult = await paymentCollection.insertOne(payment);
-
-            // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-            // const deleteResult = await paymentCollection.deleteMany(query);
 
             const filter = { _id: new ObjectId(payment.cartId) };
             const deleteResult = await selectedClassCollection.deleteOne(filter);
 
-            // res.send(payment);
+            const query = { _id: new ObjectId(payment.courseId) };
+            const course = await classCollection.findOne(query);
+
+            if (course) {
+                // Reduce availableSeats by 1
+                const updatedSeats = parseInt(course.availableSeats) - 1;
+                const updateResult = await classCollection.updateOne(query, { $set: { availableSeats: updatedSeats } });
+                // console.log(updateResult);
+            }
+
             res.send({ insertResult, deleteResult });
-        })
+        });
 
-        // app.get('/admin-stats', verifyJWT, verifyAdmin, async (req, res) => {
-        //     const users = await usersCollection.estimatedDocumentCount();
-        //     const products = await menuCollection.estimatedDocumentCount();
-        //     const orders = await paymentCollection.estimatedDocumentCount();
 
-        //     // best way to get sum of the price field is to use group and sum operator
-        //     /*
-        //       await paymentCollection.aggregate([
-        //         {
-        //           $group: {
-        //             _id: null,
-        //             total: { $sum: '$price' }
-        //           }
-        //         }
-        //       ]).toArray()
-        //     */
-
-        //     const payments = await paymentCollection.find().toArray();
-        //     const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
-
-        //     res.send({
-        //         revenue,
-        //         users,
-        //         products,
-        //         orders
-        //     })
-        // })
 
 
 
