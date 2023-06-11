@@ -118,7 +118,7 @@ async function run() {
         // making admin 
         app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
+            // console.log(id);
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -150,7 +150,7 @@ async function run() {
         // making instructor 
         app.patch('/users/instructor/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
+            // console.log(id);
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -284,7 +284,7 @@ async function run() {
         // handle status pending to approved 
         app.patch('/classes/approved/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
+            // console.log(id);
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -300,7 +300,7 @@ async function run() {
         // handle status pending to denied 
         app.patch('/classes/denied/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id);
+            // console.log(id);
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -324,6 +324,24 @@ async function run() {
         app.get('/classes-added-by-instructors', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await classCollection.find().toArray();
             res.send(result);
+        });
+
+
+         // feedback by admin
+         app.patch('/feedback/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const feedback= req.body.feedback;
+            // console.log(feedback);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    feedback: feedback
+                },
+            };
+
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
         });
 
 
