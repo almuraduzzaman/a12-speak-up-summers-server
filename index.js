@@ -46,6 +46,7 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
+        const usersCollection = client.db("speakUpSummers").collection("users");
         const classCollection = client.db("speakUpSummers").collection('classes');
         const instructorCollection = client.db("speakUpSummers").collection('instructors');
         const selectedClassCollection = client.db("speakUpSummers").collection('selectedClasses');
@@ -55,6 +56,111 @@ async function run() {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res.send({ token })
+        });
+
+
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        };
+
+        const verifyInstructor = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'instructor') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        };
+
+
+
+        // users related apis
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
+        });
+
+        // single entry in users database 
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user?.email }
+            const existingUser = await usersCollection.findOne(query);
+
+            if (existingUser) {
+                return res.send({ message: 'user already exists' })
+            }
+
+            const result = await usersCollection.insertOne(user);
+            res.send(result);
+        });
+
+        // useAdmin hook 
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ admin: false })
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { admin: user?.role === 'admin' }
+            res.send(result);
+        })
+
+        // making admin 
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        });
+
+
+
+        // useInstructor hook 
+        app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+
+            if (req.decoded.email !== email) {
+                res.send({ instructor: false })
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { instructor: user?.role === 'instructor' }
+            res.send(result);
+        })
+
+        // making instructor 
+        app.patch('/users/instructor/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'instructor'
+                },
+            };
+
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
         })
 
 
