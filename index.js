@@ -185,10 +185,9 @@ async function run() {
         });
 
 
-        //classes added by instructor 
+        //classes those added by the instructor 
         app.get('/my-classes', verifyJWT, verifyInstructor, async (req, res) => {
             const email = req.query.email;
-            console.log(email);
             if (!email) {
                 res.send([]);
             }
@@ -280,6 +279,51 @@ async function run() {
         app.get('/instructors', async (req, res) => {
             const instructors = await instructorCollection.find().toArray();
             res.send(instructors);
+        });
+
+        // handle status pending to approved 
+        app.patch('/classes/approved/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: 'approved'
+                },
+            };
+
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        });
+
+        // handle status pending to denied 
+        app.patch('/classes/denied/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    status: 'denied'
+                },
+            };
+
+            const result = await classCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        });
+
+
+
+
+        // -------------------
+        // admin related apis
+        // -------------------
+
+        // get all classes that have to approve 
+        app.get('/classes-added-by-instructors', verifyJWT, verifyAdmin, async (req, res) => {
+            const result = await classCollection.find().toArray();
+            res.send(result);
         });
 
 
