@@ -178,6 +178,33 @@ async function run() {
             res.send(classes);
         });
 
+        app.post('/classes', verifyJWT, verifyInstructor, async (req, res) => {
+            const newItem = req.body;
+            const result = await classCollection.insertOne(newItem)
+            res.send(result);
+        });
+
+
+        //classes added by instructor 
+        app.get('/my-classes', verifyJWT, verifyInstructor, async (req, res) => {
+            const email = req.query.email;
+            console.log(email);
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+
+            const query = { instructorEmail: decodedEmail };
+            const result = await classCollection.find(query).toArray();
+            res.send(result);
+        });
+
+
+
 
 
         // instructors APIs 
