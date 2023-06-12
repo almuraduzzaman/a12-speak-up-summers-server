@@ -44,7 +44,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        client.connect();
 
         const usersCollection = client.db("speakUpSummers").collection("users");
         const classCollection = client.db("speakUpSummers").collection('classes');
@@ -168,13 +168,13 @@ async function run() {
         // classes APIs 
         // popular classes based on enrolled students
         app.get('/popular/classes', async (req, res) => {
-            const classes = await classCollection.find().sort({ totalStudents: -1 }).limit(6).toArray();
+            const classes = await classCollection.find().sort({ enrolled: -1 }).limit(6).toArray();
             res.send(classes);
         });
 
         // show all classes on page
         app.get('/classes', async (req, res) => {
-            const classes = await classCollection.find().toArray();
+            const classes = await classCollection.find({status: "approved"}).toArray();
             res.send(classes);
         });
 
@@ -327,10 +327,10 @@ async function run() {
         });
 
 
-         // feedback by admin
-         app.patch('/feedback/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        // feedback by admin
+        app.patch('/feedback/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
-            const feedback= req.body.feedback;
+            const feedback = req.body.feedback;
             // console.log(feedback);
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
@@ -376,11 +376,31 @@ async function run() {
             const query = { _id: new ObjectId(payment.courseId) };
             const course = await classCollection.findOne(query);
 
+            // if (course) {
+            //     // Reduce availableSeats by 1
+            //     const updatedSeats = parseInt(course.availableSeats) - 1;
+            //     const updateResult = await classCollection.updateOne(query, { $set: { availableSeats: updatedSeats } });
+            //     // console.log(updateResult);
+            // };
+            // if (course) {
+            //     // Reduce availableSeats by 1
+            //     const updateEnrolled = parseInt(course.enrolled) + 1;
+            //     const updateResult = await classCollection.updateOne(query, { $set: { enrolled: updateEnrolled } });
+            //     // console.log(updateResult);
+            // };
+
             if (course) {
-                // Reduce availableSeats by 1
                 const updatedSeats = parseInt(course.availableSeats) - 1;
-                const updateResult = await classCollection.updateOne(query, { $set: { availableSeats: updatedSeats } });
-                // console.log(updateResult);
+                const updateEnrolled = parseInt(course.enrolled) + 1;
+            
+                const updateResult = await classCollection.updateOne(query, {
+                    $set: {
+                        availableSeats: updatedSeats,
+                        enrolled: updateEnrolled
+                    }
+                });
+            
+                console.log(updateResult);
             }
 
             res.send({ insertResult, deleteResult });
